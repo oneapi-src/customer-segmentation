@@ -1,0 +1,6 @@
+name: intel
+channels:
+  - intel
+dependencies:
+  - pip
+  - intel-aikit-modin=2021.4.1
