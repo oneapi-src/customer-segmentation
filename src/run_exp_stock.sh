@@ -3,7 +3,7 @@
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: BSD-3-Clause
 
-for j in 1 10 100
+for j in 1 2 4
 do
 	for n in {1..3}
 	do
@@ -12,7 +12,7 @@ do
 	done
 done
 
-for j in 1 10 15
+for j in 1 2 4
 do
 	for n in {1..3}
 	do
