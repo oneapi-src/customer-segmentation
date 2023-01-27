@@ -1,6 +1,12 @@
-name: intel
+name: cust_seg_intel
 channels:
   - intel
 dependencies:
   - pip
   - intel-aikit-modin=2021.4.1
+  - nb_conda_kernels 
+  - jupyter
+  - ipykernel 
+  - tqdm
+  - matplotlib
+  - daal4py<2023.0.0
