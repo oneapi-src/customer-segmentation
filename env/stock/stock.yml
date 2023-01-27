@@ -1,4 +1,4 @@
-name: stock
+name: cust_seg_stock
 channels:
   - conda-forge
 dependencies:
@@ -6,4 +6,9 @@ dependencies:
   - pip
   - pandas
   - scikit-learn
+  - nb_conda_kernels 
+  - jupyter
+  - ipykernel 
+  - tqdm
+  - matplotlib
 

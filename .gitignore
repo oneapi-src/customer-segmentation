@@ -136,3 +136,6 @@ dmypy.json
 cython_debug/
 
 saved_models/
+data/
+logs_pdt/
+docker/.env
