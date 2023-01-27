@@ -60,7 +60,7 @@ Before clustering analysis, the data is preprocessed to focus on customer purcha
 
 Rather than providing a single clustering solution, in realistic scenarios, an analyst will need to run the same clustering algorithm multiple times on the same dataset, scanning across different hyperparameters to find the most meaningful set of clusters.  To capture this, our reference solution scans across a grid of hyperparameters for the selected algorithm, and generates a clustering solution at each of these points, which is defined as hyperparameter cluster analysis.  At each hyperparameter setting, the clustering solution and the trained model is saved for analysis.  In practice, the results at each hyperparameter setting provides the analyst with many different segmentations of the data that they can take and further analyze.
 
-### Software Requirements
+## Software Requirements
 
 To run this reference kit, first clone this repository, which can be done using
 
@@ -68,12 +68,21 @@ To run this reference kit, first clone this repository, which can be done using
 git clone https://www.github.com/oneapi-src/customer-segmentation
 ```
 
-1. Python
-2. Scikit-Learn
+We have two options for running our jupyter notebooks, using docker and using anaconda locally. We include instructions for both methods.
+<ul>
+    <li>
+Option 1:
+
+Use Docker, by using docker you just build and run the docker with no additional setup. Instructions for how to use docker can be found [here](docker/README.md)
+</li>
+
+<li>Option 2:
 
 Note that this reference kit implementation already provides the necessary scripts to setup the software requirements. To utilize these environment scripts, first install Anaconda/Miniconda by following the instructions at the following link
 
 https://docs.conda.io/projects/conda/en/latest/user-guide/install/index.html
+</li>
+</ul>
 
 ### Reference Solution Setup
 
@@ -93,71 +102,6 @@ This script utilizes the dependencies found in the `env/stock/stock.yml` file to
 
 For the workload implementation to arrive at first level reference solution we will be using the stock environment
 
-### Reference Implementation
-
-#### Model Building Process
-
-This customer segmentation approach uses KMeans and DBSCAN from scikit learn library to train an AI model and generate cluster labels for the passed in data.  This process is captured within the `hyperparameter_cluster_analysis.py` script. This script *reads and preprocesses the data*, and *performs hyperparameter cluster analysis on either KMeans or DBSCAN*, while also reporting on the execution time for preprocessing and hyperparameter cluster analysis steps(we will use this information later when we are optimizing the implementation for Intel® architecture).  Furthermore, this script can also save each of the intermediate models/cluster labels for an in-depth analysis of the quality of fit.  
-
-The script takes the following arguments:
-
-```shell
-usage: hyperparameter_cluster_analysis.py [-h] [-l LOGFILE] [-i] [--use_small_features] [-r REPEATS] [-a {kmeans,dbscan}]
-                         [--save_model_dir SAVE_MODEL_DIR]
-
-optional arguments:
-  -h, --help            show this help message and exit
-  -l LOGFILE, --logfile LOGFILE
-                        log file to output benchmarking results to
-  -i, --intel           use intel technologies where available
-  --use_small_features  use 3 features instead of 21
-  -r REPEATS, --repeats REPEATS
-                        number of times to clone the data
-  -a {kmeans,dbscan}, --algo {kmeans,dbscan}
-                        clustering algorithm to use
-  --save_model_dir SAVE_MODEL_DIR
-                        directory to save ALL models if desired
-```
-
-As an example of using this, we can run the following commands:
-
-```shell
-conda activate cust_seg_stock
-cd src 
-python hyperparameter_cluster_analysis.py --logfile logs/stock.log --algo kmeans --save_model_dir saved_models
-```
-
-This will perform hyperparameter cluster analysis using KMeans/DBSCAN for the provided data, saving the data to the `saved_models` directory and providing performance logs on the algorithm to the `logs/stock.log` file.  More generally, this script serves to create KMeans/DBSCAN models on 21 features, scanning across various hyperparameters (such as cluster size for KMeans and min_samples for DBSCAN) for each of the models and saving a model at EACH hyperparameter setting to the provided `--save_model_dir` directory.  These saved models can be further analyzed as described below in [Running Cluster Analysis/Predictions](#running-cluster-analysis-predictions).
-
-In a realistic pipeline, this process would follow the above diagram, adding either a human in the loop to determine the quality of the clustering solution at each hyperparameter setting, or by adding heuristic measure to quantify cluster quality.  In this situation, we do not implement a clustering quality and instead save the trained models/predictions in the `--save_model_dir` directory at each hyperparameter setting for future analysis and cluster comparisons.
-
-As an example of a possible clustering metric, Silhouette analysis is often used for KMeans to help select the number of clusters.  See [here](https://scikit-learn.org/stable/auto_examples/cluster/plot_kmeans_silhouette_analysis.html) for further implementation details.  For example, this can also be used in the above script by adding a rough heuristic that only saves models above a certain heuristic score.
-
-#### Running Cluster Analysis/Predictions
-
-The above script will train and save models at different hyperparameter configurations for KMeans or DBSCAN.  In addition to saving the models to `save_model_dir`, the script will also save the following files for each hyper parameter configuration:
-
-1. `save_model_dir/data.csv` - preprocessed data file 
-2. `save_model_dir/{algo}/model_{hyperparameters}.pkl` - trained model file 
-3. `save_model_dir/{algo}/pred_{hyperparameters}.txt` - cluster labels for each datapoint in the data file
-
-These files can be used to analyze each of the clustering solutions generated from the hyperparameter cluster analysis.  An example snippet of how you can load the saved model files and the predictions for further analysis is:
-
-```python
-import joblib
-import pandas as pd
-model = joblib.load("saved_models/kmeans/model_{hyperparameters}.pkl")
-data = pd.read_csv("saved_models/kmeans/data.csv")
-cluster_labels = pd.read_csv("saved_models/kmeans/preds_{hyperparameters}.txt", headers=None)
-```
-
-For KMeans, the saved model can be loaded using the `joblib` module and used to predict the cluster label of a new data point.  As an example, this may look like:
-
-```python
-import joblib
-kmeans_model = joblib.load("saved_models/kmeans/model_{hyperparameters}.pkl")
-kmeans_model.predict(new_X)
-```
 
 ## Optimizing the E2E Reference Solution with Intel® oneAPI
 
@@ -191,23 +135,14 @@ This script utilizes the dependencies found in the `env/intel/intel.yml` file to
 | :---: | :---: | :---: |
 `env/intel/intel.yml`             | `cust_seg_intel` | Python=3.7.x with Intel® Sci-kit Learn Extension |
 
-### Optimized Reference Solution Implementation
-
-Optimizing the KMeans and DBSCAN solution with Intel® oneAPI is as simple as adding the following lines of code prior to calling the sklearn algorithms:
-
-```python
-from sklearnex import patch_sklearn
-patch_sklearn()
+## **Jupyter Notebook Demo**
+You can directly access the Jupyter notebook shared in this repo [here](GettingStarted.ipynb). \
+\
+To launch your own instance, activate either one of the `cust_seg_stock` or `cust_seg_intel` environments created in this readme and execute the following command.
+```sh
+jupyter notebook
 ```
-
-#### Model Building Process with Intel® Optimizations
-
-The above code is pre-built into the `hyperparameter_cluster_analysis.py` script by adding the `--intel` flag when running the hyperparameter cluster analysis.  The same training process can be run, optimized with Intel® oneAPI as follows:
-
-```shell
-conda activate cust_seg_intel
-python hyperparameter_cluster_analysis.py --logfile logs/intel.log --algo kmeans --save_model_dir saved_models --intel
-```
+Open `GettingStarted.ipynb` and follow the instructions there to perform training and inference on both the Stock and Intel optimized solutions.
 
 ## Performance Observations
 
