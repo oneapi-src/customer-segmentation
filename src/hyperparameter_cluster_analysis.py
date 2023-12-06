@@ -1,7 +1,7 @@
 # !/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-# Copyright (C) 2022 Intel Corporation
+# Copyright (C) 2023 Intel Corporation
 # SPDX-License-Identifier: BSD-3-Clause
 
 # pylint: disable=C0415,E0401,R0914
@@ -16,15 +16,18 @@ https://www.kaggle.com/code/hellbuoy/online-retail-k-means-hierarchical-clusteri
 import os
 import pathlib
 import time
-
+import warnings
 import argparse
 import logging
 import joblib
 import numpy as np
 from sklearn.pipeline import Pipeline
-
+from sklearnex import patch_sklearn
+from sklearn.preprocessing import StandardScaler
+from sklearn.cluster import KMeans, DBSCAN
 from utils.preprocessing import generate_features
 
+patch_sklearn()
 
 def main(flags):
     """Run learning with benchmarks.
@@ -32,37 +35,35 @@ def main(flags):
     Args:
         flags: Run flags.
     """
-    if flags.logfile == "":
-        logging.basicConfig(level=logging.DEBUG)
+    if flags.logfile == None:
+        logging.basicConfig(level=logging.INFO,
+            format="%(asctime)s [%(levelname)s] %(message)s")
     else:
         path = pathlib.Path(flags.logfile)
         path.parent.mkdir(parents=True, exist_ok=True)
-        logging.basicConfig(filename=flags.logfile, level=logging.DEBUG)
-    logger = logging.getLogger()
-
-    # if using intel, patch sklearn first
-    if flags.intel:
-        logger.debug("Loading intel libraries...")
-
-        from sklearnex import patch_sklearn
-        patch_sklearn()
-
-    from sklearn.preprocessing import StandardScaler
-    from sklearn.cluster import KMeans, DBSCAN
+        logging.basicConfig(handlers=[
+                logging.FileHandler(flags.logfile),
+                logging.StreamHandler()
+            ], level=logging.INFO,
+            format="%(asctime)s [%(levelname)s] %(message)s")
+    logger = logging.getLogger(__name__)
+    warnings.filterwarnings('ignore')
 
     # Read in the datasets
-    logger.debug("Reading in the data...")
+    logger.info("Reading in the data...")
 
-    if not os.path.exists("../data/OnlineRetail.csv"):
+    if not os.path.exists(flags.dataset_path):
         logger.error(
-            "Data file ../data/OnlineRetail.csv not found")
+            f"Data file {flags.dataset_path} not found")
+        print(flags.dataset_path)
         return
 
     # Preprocess dataset to create features
     preprocessing_start = time.time()
     rfm_df = generate_features(
-        num_repeats=FLAGS.repeats,
-        use_small_features=FLAGS.use_small_features
+        dataset_path=flags.dataset_path,
+        num_repeats=flags.repeats,
+        use_small_features=flags.use_small_features
     )
     preprocessing_time = time.time() - preprocessing_start
 
@@ -198,7 +199,7 @@ def main(flags):
         if flags.save_model_dir:
             # save preprocessed data
             rfm_df.to_csv(
-                os.path.join(flags.save_model_dir, "kmeans", "data.csv"),
+                os.path.join(flags.save_model_dir, "dbscan", "data.csv"),
                 index=False
             )
         hyperparameter_time = np.sum(dbscan_times)
@@ -208,20 +209,14 @@ def main(flags):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
     parser.add_argument('-l',
                         '--logfile',
                         type=str,
-                        default="",
+                        default=None,
                         help="log file to output benchmarking results to")
-
-    parser.add_argument('-i',
-                        '--intel',
-                        default=False,
-                        action="store_true",
-                        help="use intel technologies where available"
-                        )
 
     parser.add_argument('--use_small_features',
                         default=False,
@@ -233,7 +228,7 @@ if __name__ == "__main__":
                         '--repeats',
                         default=1,
                         type=int,
-                        help="number of times to clone the data"
+                        help="number of times to clone the dataset"
                         )
 
     parser.add_argument('-a',
@@ -250,5 +245,11 @@ if __name__ == "__main__":
                         help="directory to save ALL models if desired"
                         )
 
+    parser.add_argument('--dataset_path',
+                        default="../data/OnlineRetail.csv",
+                        type=str,
+                        help="path to where the dataset is located"
+                        )
+    
     FLAGS = parser.parse_args()
     main(FLAGS)

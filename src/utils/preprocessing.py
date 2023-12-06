@@ -1,7 +1,7 @@
 # !/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-# Copyright (C) 2022 Intel Corporation
+# Copyright (C) 2023 Intel Corporation
 # SPDX-License-Identifier: BSD-3-Clause
 
 # pylint: disable=C0415,E0401,R0914
@@ -14,17 +14,21 @@ import pandas as pd
 import numpy as np
 
 
-def generate_features(num_repeats: int = 1, use_small_features=False) -> pd.DataFrame:
+def generate_features(dataset_path:str, num_repeats: int = 1, use_small_features=False) -> pd.DataFrame:
     """Read data and extract features.  Repeats the dataset `num_repeats` times.
 
     Args:
+        dataset_path (str):
+            Path to where the dataset is located.
         num_repeats (int, optional):
             The number of times to repeat the dataset. Defaults to 1.
+        use_small_features (bool, optional):
+            Use 3 features instead of 21.
 
     Returns:
         pd.DataFrame: Dataframe with extracted features.
     """
-    retail = pd.read_csv("../data/OnlineRetail.csv",
+    retail = pd.read_csv(dataset_path,
                          encoding="ISO-8859-1")
 
     # Create relevant data frames
